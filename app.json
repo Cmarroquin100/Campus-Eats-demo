@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Campus Eats",
+    "slug": "campus-eats",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#CE1126"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maryville.campuseats"
+    },
+    "android": {
+      "backgroundColor": "#CE1126",
+      "package": "com.maryville.campuseats"
+    }
+  }
+}
