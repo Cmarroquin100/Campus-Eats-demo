@@ -16,6 +16,7 @@
     "android": {
       "backgroundColor": "#CE1126",
       "package": "com.maryville.campuseats"
-    }
+    },
+    "plugins": ["expo-notifications"]
   }
 }
