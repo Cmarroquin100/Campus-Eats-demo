@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Campus Eats – Web Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      body {
+        background: #ffffff;
+        color: #222222;
+      }
+
+      .app {
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100vh;
+        border: 1px solid #e3e3e3;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      }
+
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        padding-top: 32px;
+        border-bottom: 1px solid #e3e3e3;
+      }
+
+      .icon-btn {
+        padding: 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .menu-icon {
+        font-size: 24px;
+      }
+
+      .logo {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ce1126;
+      }
+
+      .bell-icon {
+        font-size: 22px;
+        transition: transform 0.15s ease, color 0.15s ease;
+      }
+
+      .bell-enabled {
+        color: #ce1126;
+        transform: scale(1.05);
+      }
+
+      .filters {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        overflow-x: auto;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .filter-pill {
+        white-space: nowrap;
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        font-size: 14px;
+        color: #374151;
+        cursor: pointer;
+        border: none;
+      }
+
+      .filter-pill.active {
+        background: #ce1126;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .list {
+        padding: 16px;
+      }
+
+      .card {
+        background: #fafafa;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 16px;
+        border: 1px solid #e3e3e3;
+      }
+
+      .card-image {
+        height: 160px;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+      }
+
+      .card-body {
+        padding: 16px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
+      }
+
+      .location-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      .location-row span:first-child {
+        margin-right: 6px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .timer-warning {
+        color: #b45309;
+      }
+
+      .timer-ok {
+        color: #15803d;
+      }
+
+      .low-qty {
+        font-size: 12px;
+        color: #b91c1c;
+      }
+
+      .tag {
+        display: inline-block;
+        background: #f3f4f6;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: #374151;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        background: #111827;
+        color: #ffffff;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, -4px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="top-bar">
+        <div class="icon-btn" title="Menu">
+          <span class="menu-icon">☰</span>
+        </div>
+        <div class="logo">Campus Eats</div>
+        <div class="icon-btn" id="bell-button" title="Toggle notifications">
+          <span class="bell-icon" id="bell-icon">🔕</span>
+        </div>
+      </div>
+
+      <div class="filters" id="filters">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="list" id="list">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const filters = ["All", "Vegetarian", "DUC", "Lombardi Hall"];
+
+      const posts = [
+        {
+          id: "1",
+          title: "Pizza slices",
+          location: "DUC Lobby",
+          tag: "Vegetarian",
+          timerMins: 8,
+          lowQuantity: true,
+          building: "DUC",
+        },
+        {
+          id: "2",
+          title: "Bagels & cream cheese",
+          location: "Lombardi Hall kitchen",
+          tag: null,
+          timerMins: 25,
+          lowQuantity: false,
+          building: "Lombardi Hall",
+        },
+      ];
+
+      let activeFilter = "All";
+      let notificationsEnabled = false;
+
+      const filtersEl = document.getElementById("filters");
+      const listEl = document.getElementById("list");
+      const bellButton = document.getElementById("bell-button");
+      const bellIcon = document.getElementById("bell-icon");
+      const toastEl = document.getElementById("toast");
+
+      function showToast(message) {
+        toastEl.textContent = message;
+        toastEl.classList.add("show");
+        clearTimeout(showToast._timeout);
+        showToast._timeout = setTimeout(() => {
+          toastEl.classList.remove("show");
+        }, 2000);
+      }
+
+      function renderFilters() {
+        filtersEl.innerHTML = "";
+        filters.forEach((f) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "filter-pill" + (f === activeFilter ? " active" : "");
+          btn.textContent = f;
+          btn.onclick = () => {
+            activeFilter = f;
+            renderFilters();
+            renderList();
+          };
+          filtersEl.appendChild(btn);
+        });
+      }
+
+      function getFilteredPosts() {
+        if (activeFilter === "All") return posts;
+        return posts.filter(
+          (p) =>
+            p.tag === activeFilter ||
+            p.building.toLowerCase().includes(activeFilter.toLowerCase())
+        );
+      }
+
+      function renderList() {
+        const data = getFilteredPosts();
+        listEl.innerHTML = "";
+
+        data.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const img = document.createElement("div");
+          img.className = "card-image";
+          img.textContent = "🍕";
+
+          const body = document.createElement("div");
+          body.className = "card-body";
+
+          const title = document.createElement("div");
+          title.className = "card-title";
+          title.textContent = item.title;
+
+          const locationRow = document.createElement("div");
+          locationRow.className = "location-row";
+          locationRow.innerHTML = "<span>📍</span><span>" + item.location + "</span>";
+
+          const row = document.createElement("div");
+          row.className = "row";
+
+          const timer = document.createElement("span");
+          timer.className =
+            item.timerMins <= 10 ? "timer-warning" : "timer-ok";
+          timer.textContent = "Ends in " + item.timerMins + " mins";
+
+          row.appendChild(timer);
+
+          if (item.lowQuantity) {
+            const low = document.createElement("span");
+            low.className = "low-qty";
+            low.textContent = "Low Quantity";
+            row.appendChild(low);
+          }
+
+          body.appendChild(title);
+          body.appendChild(locationRow);
+          body.appendChild(row);
+
+          if (item.tag) {
+            const tag = document.createElement("div");
+            tag.className = "tag";
+            tag.textContent = item.tag;
+            body.appendChild(tag);
+          }
+
+          card.appendChild(img);
+          card.appendChild(body);
+          listEl.appendChild(card);
+        });
+      }
+
+      bellButton.addEventListener("click", () => {
+        notificationsEnabled = !notificationsEnabled;
+        if (notificationsEnabled) {
+          bellIcon.textContent = "🔔";
+          bellIcon.classList.add("bell-enabled");
+          showToast("Notifications turned ON");
+        } else {
+          bellIcon.textContent = "🔕";
+          bellIcon.classList.remove("bell-enabled");
+          showToast("Notifications turned OFF");
+        }
+      });
+
+      renderFilters();
+      renderList();
+    </script>
+  </body>
+  </html>
