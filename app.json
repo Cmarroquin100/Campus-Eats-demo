@@ -8,7 +8,9 @@
     "splash": {
       "backgroundColor": "#CE1126"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.maryville.campuseats"
@@ -16,6 +18,11 @@
     "android": {
       "backgroundColor": "#CE1126",
       "package": "com.maryville.campuseats"
-    }
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }
