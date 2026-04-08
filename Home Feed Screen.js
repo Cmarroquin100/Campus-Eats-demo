@@ -6,11 +6,13 @@ import {
   StyleSheet,
   ScrollView,
   FlatList,
+  Alert,
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { colors } from '../theme';
 import { MOCK_FOOD_POSTS } from '../data/mockData';
 
-const FILTERS = ['All', 'Vegetarian', 'DUC', 'Gander Hall'];
+const FILTERS = ['All', 'Vegetarian', 'DUC', 'Lombardi Hall'];
 
 function FoodCard({ item }) {
   const timerColor =
@@ -46,6 +48,48 @@ function FoodCard({ item }) {
 
 export default function HomeFeedScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  const handleToggleNotifications = async () => {
+    try {
+      if (!notificationsEnabled) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+
+        if (finalStatus !== 'granted') {
+          Alert.alert(
+            'Notifications not enabled',
+            'To get alerts when new food is posted, please enable notifications in your device settings.'
+          );
+          setNotificationsEnabled(false);
+          return;
+        }
+
+        setNotificationsEnabled(true);
+        Alert.alert(
+          'Notifications on',
+          'You will now get alerts when new food is posted.'
+        );
+      } else {
+        setNotificationsEnabled(false);
+        Alert.alert(
+          'Notifications off',
+          'You will no longer receive alerts when new food is posted.'
+        );
+      }
+    } catch (e) {
+      console.warn('Error toggling notifications', e);
+      Alert.alert(
+        'Something went wrong',
+        'We could not update your notification settings. Please try again.'
+      );
+    }
+  };
 
   const filteredPosts =
     activeFilter === 'All'
@@ -66,8 +110,15 @@ export default function HomeFeedScreen({ navigation }) {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.logo}>Campus Eats</Text>
-        <TouchableOpacity style={styles.bellBtn}>
-          <Text style={styles.bellIcon}>🔔</Text>
+        <TouchableOpacity style={styles.bellBtn} onPress={handleToggleNotifications}>
+          <Text
+            style={[
+              styles.bellIcon,
+              notificationsEnabled && styles.bellIconActive,
+            ]}
+          >
+            {notificationsEnabled ? '🔔' : '🔕'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -126,6 +177,7 @@ const styles = StyleSheet.create({
   logo: { fontSize: 18, fontWeight: '700', color: colors.primary },
   bellBtn: { padding: 8 },
   bellIcon: { fontSize: 22 },
+  bellIconActive: { color: colors.primary },
   filtersScroll: { maxHeight: 44 },
   filtersContent: {
     paddingHorizontal: 16,
