@@ -4,21 +4,47 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   FlatList,
+  Image,
 } from 'react-native';
-import { colors } from '../theme';
-import { MOCK_FOOD_POSTS } from '../data/mockData';
+import { colors } from './theme';
 
 const FILTERS = ['All', 'Vegetarian', 'DUC', 'Gander Hall'];
+const FOOD_PHOTOS = {
+  pizza:
+    'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
+  pastry:
+    'https://images.unsplash.com/photo-1483695028939-5bb13f8648b0?auto=format&fit=crop&w=1200&q=80',
+  snack:
+    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
+  vegetarian:
+    'https://images.unsplash.com/photo-1543353071-087092ec393a?auto=format&fit=crop&w=1200&q=80',
+  generic:
+    'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80',
+};
 
-function FoodCard({ item }) {
+function getPhotoForPost(item) {
+  if (item.imageUri) return item.imageUri;
+  const text = `${item.title ?? ''} ${item.description ?? ''} ${item.tag ?? ''}`.toLowerCase();
+  if (text.includes('pizza')) return FOOD_PHOTOS.pizza;
+  if (text.includes('pastr') || text.includes('bagel') || text.includes('cookie')) {
+    return FOOD_PHOTOS.pastry;
+  }
+  if (text.includes('vegetarian') || text.includes('salad')) return FOOD_PHOTOS.vegetarian;
+  if (text.includes('snack') || text.includes('chips') || text.includes('cracker')) {
+    return FOOD_PHOTOS.snack;
+  }
+  return FOOD_PHOTOS.generic;
+}
+
+function FoodCard({ item, onPress }) {
   const timerColor =
     item.timerMins <= 10 ? colors.warning : colors.success;
+  const stockPhoto = getPhotoForPost(item);
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.cardImage}>
-        <Text style={styles.cardImagePlaceholder}>🍕</Text>
+        <Image source={{ uri: stockPhoto }} style={styles.cardPhoto} />
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{item.title}</Text>
@@ -40,20 +66,25 @@ function FoodCard({ item }) {
           </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-export default function HomeFeedScreen({ navigation }) {
+export default function HomeFeedScreen({
+  navigation,
+  posts = [],
+  onSelectPost,
+  onOpenNotifications,
+}) {
   const [activeFilter, setActiveFilter] = useState('All');
 
   const filteredPosts =
     activeFilter === 'All'
-      ? MOCK_FOOD_POSTS
-      : MOCK_FOOD_POSTS.filter(
+      ? posts
+      : posts.filter(
           (p) =>
             p.tag === activeFilter ||
-            p.building.toLowerCase().includes(activeFilter.toLowerCase())
+            p.building?.toLowerCase().includes(activeFilter.toLowerCase())
         );
 
   return (
@@ -66,17 +97,12 @@ export default function HomeFeedScreen({ navigation }) {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.logo}>Campus Eats</Text>
-        <TouchableOpacity style={styles.bellBtn}>
+        <TouchableOpacity style={styles.bellBtn} onPress={() => onOpenNotifications?.()}>
           <Text style={styles.bellIcon}>🔔</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtersScroll}
-        contentContainerStyle={styles.filtersContent}
-      >
+      <View style={styles.filtersRow}>
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f}
@@ -96,12 +122,14 @@ export default function HomeFeedScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       <FlatList
         data={filteredPosts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <FoodCard item={item} />}
+        renderItem={({ item }) => (
+          <FoodCard item={item} onPress={() => onSelectPost?.(item)} />
+        )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -126,22 +154,25 @@ const styles = StyleSheet.create({
   logo: { fontSize: 18, fontWeight: '700', color: colors.primary },
   bellBtn: { padding: 8 },
   bellIcon: { fontSize: 22 },
-  filtersScroll: { maxHeight: 44 },
-  filtersContent: {
+  filtersRow: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    paddingVertical: 10,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   filterPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    minHeight: 36,
+    justifyContent: 'center',
     borderRadius: 20,
     backgroundColor: colors.tagBg,
-    marginRight: 8,
+    marginRight: 6,
   },
   filterPillActive: { backgroundColor: colors.primary },
-  filterText: { fontSize: 14, color: colors.secondary },
+  filterText: { fontSize: 14, lineHeight: 18, color: colors.secondary, fontWeight: '600' },
   filterTextActive: { color: colors.white, fontWeight: '600' },
   listContent: { padding: 16, paddingBottom: 32 },
   card: {
@@ -157,6 +188,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  cardPhoto: {
+    width: '100%',
+    height: '100%',
   },
   cardImagePlaceholder: { fontSize: 48 },
   cardBody: { padding: 16 },
